@@ -1,0 +1,134 @@
+{
+  "profile": {
+    "name": "Jaco",
+    "age": 46,
+    "sex": "male",
+    "height_cm": 178,
+    "start_weight_kg": 90,
+    "goal_weight_kg": 77,
+    "goal_loss_kg": 12,
+    "timeframe_months": 3,
+    "activity_baseline_steps": 3000,
+    "constraints": {
+      "medical": "none reported",
+      "alcohol": "none",
+      "non_negotiables": [
+        "2 cheat meals per week"
+      ]
+    },
+    "preferences": {
+      "checkin_mode": "A (daily)",
+      "checkin_times": ["07:00", "13:00", "20:00"],
+      "intermittent_fasting": "yes (planned lunch + dinner)",
+      "night_snack_trigger_time": "17:30",
+      "night_snacks_common": ["yoghurt", "dry wors", "salt cookies"],
+      "diet_note": "does not prefer low-fat"
+    }
+  },
+  "coach_targets_set": {
+    "daily_calorie_target_kcal": "1900-2100",
+    "daily_protein_target_g": 160,
+    "daily_step_target_progression": [
+      "Week 1: 7000/day",
+      "Week 2+: 8000-9000/day"
+    ],
+    "estimated_tdee_kcal": 2550,
+    "estimated_bmr_kcal": 1820
+  },
+  "logs": [
+    {
+      "date": "2026-02-15",
+      "type": "setup",
+      "notes": [
+        "Program setup and goals discussed.",
+        "User said going to bed and to continue in the morning."
+      ]
+    },
+    {
+      "date": "2026-02-16",
+      "entries": [
+        {
+          "time_local": "08:29",
+          "item": "Seattle Coffee tall cappuccino",
+          "details": "full cream milk, no sugar",
+          "kcal_estimate": 170,
+          "kcal_range": "150-190"
+        },
+        {
+          "time_local": "morning",
+          "item": "Tea",
+          "details": "full cream milk + 1/2 tsp sugar",
+          "kcal_estimate": 25
+        },
+        {
+          "time_local": "~13:00-14:00",
+          "item": "Restaurant lunch",
+          "details": "grilled chicken + avocado + greek-style side salad + small pumpkin/butternut portion; user left part of meal",
+          "kcal_initial_estimate": 820,
+          "kcal_recalculated_after_leftovers": 690,
+          "kcal_range_recalculated": "600-780",
+          "photo_paths": [
+            "/Users/cash/.openclaw/media/inbound/ad0c1179-e0dc-4791-961f-b1c235410043.jpg",
+            "/Users/cash/.openclaw/media/inbound/f8d9c601-bd09-4219-9359-8f547b52b2bf.jpg"
+          ]
+        },
+        {
+          "time_local": "14:10",
+          "item": "Seattle Coffee tall cappuccino + Coke Zero",
+          "details": "full cream milk, no sugar",
+          "kcal_estimate": 170,
+          "kcal_range": "150-190",
+          "kcal_coke_zero": 0
+        },
+        {
+          "time_local": "afternoon snack",
+          "item": "Dry wors stick",
+          "kcal_initial_visual_estimate": 110,
+          "package_value_kj": 291,
+          "package_value_kcal": 70,
+          "logged_value_kcal": 70,
+          "photo_paths": [
+            "/Users/cash/.openclaw/media/inbound/3e580027-1631-476f-ad57-14d3dee59a6b.jpg"
+          ]
+        },
+        {
+          "time_local": "dinner",
+          "item": "Spaghetti bolognese + cheese",
+          "details": "left about 1/3 on plate",
+          "kcal_estimate": 620,
+          "kcal_range": "520-700",
+          "photo_paths": [
+            "/Users/cash/.openclaw/media/inbound/717aa5eb-03b8-4fd0-9fdc-4f04f94f7f52.jpg"
+          ]
+        },
+        {
+          "time_local": "evening",
+          "item": "Rooibos tea",
+          "details": "milk + 1/2 tsp honey",
+          "kcal_estimate": 30,
+          "kcal_range": "25-35"
+        }
+      ],
+      "daily_summary": {
+        "steps": 2245,
+        "kcal_total_estimated": 1745,
+        "kcal_target": "1900-2100",
+        "estimated_burn_kcal": "2450-2600",
+        "estimated_deficit_kcal": "700-850",
+        "deficit_best_estimate": 780
+      }
+    }
+  ],
+  "automation": {
+    "cron_job_created": {
+      "name": "neoslim daily 07:00 weigh-in reminder",
+      "schedule": "0 7 * * * Africa/Johannesburg",
+      "destination": "discord channel:1472665669140222052"
+    }
+  },
+  "meta": {
+    "saved_by": "Neo",
+    "saved_at_local_tz": "Africa/Johannesburg",
+    "note": "Values are estimates unless package label values were provided."
+  }
+}
