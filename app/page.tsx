@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import CalorieRing from "./components/CalorieRing";
 import StatCard from "./components/StatCard";
@@ -12,6 +12,9 @@ import {
   Coffee,
   UtensilsCrossed,
   Cookie,
+  Droplets,
+  GlassWater,
+  Minus,
 } from "lucide-react";
 import {
   BarChart,
@@ -24,6 +27,9 @@ import {
   ReferenceLine,
   Tooltip,
   CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 function todayString() {
@@ -43,6 +49,12 @@ const categoryColor = {
   snack: "bg-rose-50 text-rose-600",
 };
 
+const MACRO_COLORS = {
+  protein: "#3b82f6",
+  carbs: "#f59e0b",
+  fats: "#ef4444",
+};
+
 export default function Dashboard() {
   const profile = useQuery(api.profiles.get);
   const today = todayString();
@@ -50,6 +62,8 @@ export default function Dashboard() {
   const foodEntries = useQuery(api.foodEntries.listByDate, { date: today });
   const weightEntries = useQuery(api.weightEntries.list, { limit: 30 });
   const recentLogs = useQuery(api.dailyLogs.list, { limit: 7 });
+  const addWater = useMutation(api.dailyLogs.addWater);
+  const removeWater = useMutation(api.dailyLogs.removeWater);
 
   if (profile === undefined) {
     return (
@@ -74,12 +88,26 @@ export default function Dashboard() {
   }
 
   const kcalConsumed = dailyLog?.kcalTotal ?? 0;
-  const kcalTarget = Math.round(
-    (profile.dailyCalorieMin + profile.dailyCalorieMax) / 2
-  );
+  const kcalBudget = profile.dailyCalorieMax;
   const steps = dailyLog?.stepsCount ?? 0;
+  const stepTarget = profile.dailyStepTarget;
+  const stepPercent = Math.min(100, (steps / stepTarget) * 100);
   const deficit = dailyLog?.deficitKcal ?? 0;
   const latestWeight = weightEntries?.[0]?.weightKg ?? profile.startWeightKg;
+  const waterGlasses = dailyLog?.waterGlasses ?? 0;
+  const waterTarget = profile.dailyWaterGlassTarget ?? 8;
+
+  // Macro totals
+  const totalProtein = foodEntries?.reduce((s, e) => s + (e.proteinG ?? 0), 0) ?? 0;
+  const totalCarbs = foodEntries?.reduce((s, e) => s + (e.carbsG ?? 0), 0) ?? 0;
+  const totalFats = foodEntries?.reduce((s, e) => s + (e.fatsG ?? 0), 0) ?? 0;
+  const totalMacroG = totalProtein + totalCarbs + totalFats;
+
+  const macroData = [
+    { name: "Protein", value: totalProtein, color: MACRO_COLORS.protein },
+    { name: "Carbs", value: totalCarbs, color: MACRO_COLORS.carbs },
+    { name: "Fats", value: totalFats, color: MACRO_COLORS.fats },
+  ];
 
   // Weight chart data (chronological)
   const weightChartData = (weightEntries ?? [])
@@ -99,7 +127,6 @@ export default function Dashboard() {
         weekday: "short",
       }),
       kcal: l.kcalTotal ?? 0,
-      target: kcalTarget,
     }));
 
   return (
@@ -118,39 +145,191 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Calorie Ring + Stats */}
+      {/* Calorie Budget Ring */}
       <div className="rounded-2xl bg-card-bg border border-card-border p-5 shadow-sm">
         <div className="flex items-center gap-6">
-          <CalorieRing consumed={kcalConsumed} target={kcalTarget} />
+          <CalorieRing consumed={kcalConsumed} budget={kcalBudget} />
           <div className="flex-1 space-y-3">
             <div>
               <div className="text-xs text-muted uppercase tracking-wider font-medium">
-                Remaining
+                Budget ceiling
               </div>
-              <div className="text-xl font-bold text-accent">
-                {Math.max(0, kcalTarget - kcalConsumed)} kcal
+              <div className="text-sm font-semibold">
+                {kcalBudget} kcal max
               </div>
             </div>
             <div>
               <div className="text-xs text-muted uppercase tracking-wider font-medium">
-                Target range
+                Consumed
               </div>
               <div className="text-sm font-semibold">
-                {profile.dailyCalorieMin}&ndash;{profile.dailyCalorieMax} kcal
+                {kcalConsumed} kcal
               </div>
             </div>
+            {deficit > 0 && (
+              <div>
+                <div className="text-xs text-muted uppercase tracking-wider font-medium">
+                  Deficit
+                </div>
+                <div className="text-sm font-semibold text-success">
+                  {deficit} kcal
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Water Tracker */}
+      <div className="rounded-2xl bg-card-bg border border-card-border p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Droplets size={16} className="text-sky-500" />
+            <span className="text-sm font-semibold uppercase tracking-wider text-muted">
+              Water
+            </span>
+          </div>
+          <span className="text-sm font-semibold">
+            {waterGlasses} / {waterTarget}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: waterTarget }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                if (i < waterGlasses) {
+                  removeWater({ date: today });
+                } else if (i === waterGlasses) {
+                  addWater({ date: today, profileId: profile._id });
+                }
+              }}
+              className="flex-1 flex justify-center"
+            >
+              <GlassWater
+                size={24}
+                className={`transition-colors ${
+                  i < waterGlasses
+                    ? "text-sky-500 fill-sky-100"
+                    : "text-gray-200"
+                }`}
+                strokeWidth={1.5}
+              />
+            </button>
+          ))}
+          {waterGlasses > 0 && (
+            <button
+              onClick={() => removeWater({ date: today })}
+              className="ml-1 p-1 text-muted hover:text-danger"
+              title="Remove last glass"
+            >
+              <Minus size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Steps Progress */}
+      <div className="rounded-2xl bg-card-bg border border-card-border p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Footprints size={16} className="text-accent" />
+            <span className="text-sm font-semibold uppercase tracking-wider text-muted">
+              Steps
+            </span>
+          </div>
+          <span className="text-sm font-semibold">
+            {steps.toLocaleString()} / {stepTarget.toLocaleString()}
+          </span>
+        </div>
+        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{
+              width: `${stepPercent}%`,
+              backgroundColor: stepPercent >= 100 ? "#10b981" : "#0d9488",
+            }}
+          />
+        </div>
+        <div className="flex justify-between mt-1.5 text-[10px] text-muted">
+          <span>{Math.round(stepPercent)}% of target</span>
+          <span>{Math.max(0, stepTarget - steps).toLocaleString()} to go</span>
+        </div>
+      </div>
+
+      {/* Macro Breakdown */}
+      {totalMacroG > 0 && (
+        <div className="rounded-2xl bg-card-bg border border-card-border p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-3">
+            Macros
+          </h2>
+          <div className="flex items-center gap-4">
+            <div className="w-24 h-24 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={macroData.filter((d) => d.value > 0)}
+                    dataKey="value"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={25}
+                    outerRadius={42}
+                    strokeWidth={0}
+                  >
+                    {macroData
+                      .filter((d) => d.value > 0)
+                      .map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {macroData.map((macro) => (
+                <div key={macro.name} className="flex items-center gap-2">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: macro.color }}
+                  />
+                  <span className="text-xs text-muted flex-1">{macro.name}</span>
+                  <span className="text-sm font-semibold">{macro.value}g</span>
+                  <span className="text-[10px] text-muted w-8 text-right">
+                    {totalMacroG > 0
+                      ? Math.round((macro.value / totalMacroG) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+              ))}
+              <div className="pt-1 border-t border-card-border flex items-center justify-between">
+                <span className="text-xs text-muted">
+                  Protein target: {profile.dailyProteinTargetG}g
+                </span>
+                <span
+                  className={`text-xs font-semibold ${
+                    totalProtein >= profile.dailyProteinTargetG
+                      ? "text-success"
+                      : "text-muted"
+                  }`}
+                >
+                  {totalProtein >= profile.dailyProteinTargetG
+                    ? "Hit!"
+                    : `${profile.dailyProteinTargetG - totalProtein}g to go`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          label="Steps"
-          value={steps.toLocaleString()}
-          sub={`/ ${profile.dailyStepTarget.toLocaleString()} target`}
-          icon={<Footprints size={16} />}
-          accent
+          label="Weight"
+          value={`${latestWeight} kg`}
+          sub={`Goal: ${profile.goalWeightKg} kg`}
+          icon={<Scale size={16} />}
         />
         <StatCard
           label="Deficit"
@@ -160,16 +339,17 @@ export default function Dashboard() {
           accent
         />
         <StatCard
-          label="Weight"
-          value={`${latestWeight} kg`}
-          sub={`Goal: ${profile.goalWeightKg} kg`}
-          icon={<Scale size={16} />}
-        />
-        <StatCard
           label="Burned"
           value={`${dailyLog?.kcalBurned ?? "—"}`}
           sub="TDEE estimate"
           icon={<Flame size={16} />}
+        />
+        <StatCard
+          label="Water"
+          value={`${waterGlasses} / ${waterTarget}`}
+          sub="glasses today"
+          icon={<Droplets size={16} />}
+          accent
         />
       </div>
 
@@ -189,11 +369,20 @@ export default function Dashboard() {
                 "bg-gray-50 text-gray-600";
               return (
                 <div key={entry._id} className="flex items-start gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colorCls}`}
-                  >
-                    <Icon size={14} />
-                  </div>
+                  {/* Photo thumbnail or category icon */}
+                  {entry.photoUrl ? (
+                    <img
+                      src={entry.photoUrl}
+                      alt={entry.item}
+                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorCls}`}
+                    >
+                      <Icon size={16} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-sm font-medium truncate">
@@ -207,6 +396,25 @@ export default function Dashboard() {
                       {entry.timeLocal}
                       {entry.details && ` — ${entry.details}`}
                     </div>
+                    {(entry.proteinG || entry.carbsG || entry.fatsG) && (
+                      <div className="flex gap-2 mt-0.5 text-[10px]">
+                        {entry.proteinG != null && (
+                          <span style={{ color: MACRO_COLORS.protein }}>
+                            P {entry.proteinG}g
+                          </span>
+                        )}
+                        {entry.carbsG != null && (
+                          <span style={{ color: MACRO_COLORS.carbs }}>
+                            C {entry.carbsG}g
+                          </span>
+                        )}
+                        {entry.fatsG != null && (
+                          <span style={{ color: MACRO_COLORS.fats }}>
+                            F {entry.fatsG}g
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -226,11 +434,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={weightChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11 }}
-                stroke="#d1d5db"
-              />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#d1d5db" />
               <YAxis
                 domain={["dataMin - 1", "dataMax + 1"]}
                 tick={{ fontSize: 11 }}
@@ -272,11 +476,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 11 }}
-                stroke="#d1d5db"
-              />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#d1d5db" />
               <YAxis tick={{ fontSize: 11 }} stroke="#d1d5db" width={35} />
               <Tooltip
                 contentStyle={{
@@ -286,9 +486,10 @@ export default function Dashboard() {
                 }}
               />
               <ReferenceLine
-                y={kcalTarget}
-                stroke="#f59e0b"
+                y={kcalBudget}
+                stroke="#ef4444"
                 strokeDasharray="4 4"
+                label={{ value: "Max", fontSize: 10, fill: "#ef4444" }}
               />
               <Bar
                 dataKey="kcal"

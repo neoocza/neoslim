@@ -15,6 +15,7 @@ export default defineSchema({
     dailyCalorieMax: v.number(),
     dailyProteinTargetG: v.number(),
     dailyStepTarget: v.number(),
+    dailyWaterGlassTarget: v.optional(v.number()),
     ifWindow: v.optional(v.string()),
     cheatMealsPerWeek: v.optional(v.number()),
     notes: v.optional(v.string()),
@@ -33,6 +34,7 @@ export default defineSchema({
     kcalTotal: v.optional(v.number()),
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
+    waterGlasses: v.optional(v.number()),
     notes: v.optional(v.string()),
   }).index("by_date", ["date"]),
 
@@ -44,6 +46,10 @@ export default defineSchema({
     kcalEstimate: v.number(),
     kcalRangeLow: v.optional(v.number()),
     kcalRangeHigh: v.optional(v.number()),
+    proteinG: v.optional(v.number()),
+    carbsG: v.optional(v.number()),
+    fatsG: v.optional(v.number()),
+    photoStorageId: v.optional(v.id("_storage")),
     category: v.union(
       v.literal("meal"),
       v.literal("drink"),

@@ -21,6 +21,7 @@ export const seedData = mutation({
       dailyCalorieMax: 2100,
       dailyProteinTargetG: 160,
       dailyStepTarget: 7000,
+      dailyWaterGlassTarget: 8,
       ifWindow: "lunch + dinner",
       cheatMealsPerWeek: 2,
     });
@@ -52,6 +53,9 @@ export const seedData = mutation({
         kcalEstimate: 170,
         kcalRangeLow: 150,
         kcalRangeHigh: 190,
+        proteinG: 9,
+        carbsG: 14,
+        fatsG: 9,
         category: "drink" as const,
       },
       {
@@ -59,6 +63,9 @@ export const seedData = mutation({
         item: "Tea",
         details: "full cream milk + 1/2 tsp sugar",
         kcalEstimate: 25,
+        proteinG: 1,
+        carbsG: 3,
+        fatsG: 1,
         category: "drink" as const,
       },
       {
@@ -69,6 +76,9 @@ export const seedData = mutation({
         kcalEstimate: 690,
         kcalRangeLow: 600,
         kcalRangeHigh: 780,
+        proteinG: 52,
+        carbsG: 30,
+        fatsG: 38,
         category: "meal" as const,
       },
       {
@@ -78,12 +88,18 @@ export const seedData = mutation({
         kcalEstimate: 170,
         kcalRangeLow: 150,
         kcalRangeHigh: 190,
+        proteinG: 9,
+        carbsG: 14,
+        fatsG: 9,
         category: "drink" as const,
       },
       {
         timeLocal: "15:30",
         item: "Dry wors stick",
         kcalEstimate: 70,
+        proteinG: 6,
+        carbsG: 0,
+        fatsG: 5,
         category: "snack" as const,
       },
       {
@@ -93,6 +109,9 @@ export const seedData = mutation({
         kcalEstimate: 620,
         kcalRangeLow: 520,
         kcalRangeHigh: 700,
+        proteinG: 32,
+        carbsG: 55,
+        fatsG: 24,
         category: "meal" as const,
       },
       {
@@ -102,6 +121,9 @@ export const seedData = mutation({
         kcalEstimate: 30,
         kcalRangeLow: 25,
         kcalRangeHigh: 35,
+        proteinG: 1,
+        carbsG: 5,
+        fatsG: 0,
         category: "drink" as const,
       },
     ];

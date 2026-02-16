@@ -32,6 +32,7 @@ export const create = mutation({
     kcalTotal: v.optional(v.number()),
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
+    waterGlasses: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -54,9 +55,51 @@ export const update = mutation({
     kcalTotal: v.optional(v.number()),
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
+    waterGlasses: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {
     await ctx.db.patch(id, fields);
+  },
+});
+
+export const addWater = mutation({
+  args: {
+    date: v.string(),
+    profileId: v.id("profiles"),
+  },
+  handler: async (ctx, { date, profileId }) => {
+    const existing = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_date", (q) => q.eq("date", date))
+      .collect();
+    if (existing.length > 0) {
+      const current = existing[0].waterGlasses ?? 0;
+      await ctx.db.patch(existing[0]._id, { waterGlasses: current + 1 });
+      return existing[0]._id;
+    }
+    return await ctx.db.insert("dailyLogs", {
+      date,
+      profileId,
+      waterGlasses: 1,
+    });
+  },
+});
+
+export const removeWater = mutation({
+  args: {
+    date: v.string(),
+  },
+  handler: async (ctx, { date }) => {
+    const existing = await ctx.db
+      .query("dailyLogs")
+      .withIndex("by_date", (q) => q.eq("date", date))
+      .collect();
+    if (existing.length > 0) {
+      const current = existing[0].waterGlasses ?? 0;
+      if (current > 0) {
+        await ctx.db.patch(existing[0]._id, { waterGlasses: current - 1 });
+      }
+    }
   },
 });

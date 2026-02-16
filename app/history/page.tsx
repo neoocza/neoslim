@@ -13,6 +13,7 @@ import {
   Coffee,
   UtensilsCrossed,
   Cookie,
+  Droplets,
 } from "lucide-react";
 
 const categoryIcon = {
@@ -21,7 +22,7 @@ const categoryIcon = {
   snack: Cookie,
 };
 
-function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCount?: number; kcalTotal?: number; deficitKcal?: number; kcalBurned?: number; notes?: string } }) {
+function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCount?: number; kcalTotal?: number; deficitKcal?: number; kcalBurned?: number; waterGlasses?: number; notes?: string } }) {
   const [open, setOpen] = useState(false);
   const foodEntries = useQuery(
     api.foodEntries.listByDailyLog,
@@ -80,6 +81,11 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
                 <TrendingDown size={12} /> {log.deficitKcal} deficit
               </span>
             )}
+            {log.waterGlasses != null && log.waterGlasses > 0 && (
+              <span className="flex items-center gap-1">
+                <Droplets size={12} /> {log.waterGlasses} glasses
+              </span>
+            )}
           </div>
           {log.notes && (
             <div className="text-xs text-muted italic">{log.notes}</div>
@@ -98,7 +104,15 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
                   UtensilsCrossed;
                 return (
                   <div key={entry._id} className="flex items-center gap-2">
-                    <Icon size={12} className="text-muted flex-shrink-0" />
+                    {entry.photoUrl ? (
+                      <img
+                        src={entry.photoUrl}
+                        alt={entry.item}
+                        className="w-6 h-6 rounded object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <Icon size={12} className="text-muted flex-shrink-0" />
+                    )}
                     <span className="text-xs flex-1 truncate">
                       {entry.timeLocal} — {entry.item}
                     </span>
