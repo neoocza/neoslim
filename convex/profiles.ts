@@ -9,6 +9,24 @@ export const get = query({
   },
 });
 
+export const patch = mutation({
+  args: {
+    dailyCalorieMax: v.optional(v.number()),
+    dailyCalorieMin: v.optional(v.number()),
+    dailyStepTarget: v.optional(v.number()),
+    dailyWaterGlassTarget: v.optional(v.number()),
+    dailyProteinTargetG: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.query("profiles").collect();
+    if (existing.length === 0) throw new Error("No profile found");
+    const fields = Object.fromEntries(
+      Object.entries(args).filter(([, v]) => v !== undefined)
+    );
+    await ctx.db.patch(existing[0]._id, fields);
+  },
+});
+
 export const upsert = mutation({
   args: {
     name: v.string(),

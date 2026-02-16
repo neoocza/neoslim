@@ -18,7 +18,7 @@ export const seedData = mutation({
       tdeeKcal: 2550,
       bmrKcal: 1820,
       dailyCalorieMin: 1900,
-      dailyCalorieMax: 2100,
+      dailyCalorieMax: 2000,
       dailyProteinTargetG: 160,
       dailyStepTarget: 7000,
       dailyWaterGlassTarget: 8,

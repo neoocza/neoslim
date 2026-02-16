@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import {
@@ -9,12 +9,11 @@ import {
   UtensilsCrossed,
   Cookie,
   Trash2,
-  Camera,
-  X,
 } from "lucide-react";
 
 function todayString() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function nowTimeString() {
@@ -31,8 +30,6 @@ export default function LogFood() {
   const createDailyLog = useMutation(api.dailyLogs.create);
   const addFood = useMutation(api.foodEntries.add);
   const removeFood = useMutation(api.foodEntries.remove);
-  const generateUploadUrl = useMutation(api.foodEntries.generateUploadUrl);
-
   const [item, setItem] = useState("");
   const [details, setDetails] = useState("");
   const [kcal, setKcal] = useState("");
@@ -42,25 +39,9 @@ export default function LogFood() {
   const [time, setTime] = useState(nowTimeString());
   const [category, setCategory] = useState<"meal" | "drink" | "snack">("meal");
   const [submitting, setSubmitting] = useState(false);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const kcalTotal = foodEntries?.reduce((s, e) => s + e.kcalEstimate, 0) ?? 0;
   const kcalBudget = profile ? profile.dailyCalorieMax : 2100;
-
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  }
-
-  function clearPhoto() {
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,19 +53,6 @@ export default function LogFood() {
         logId = await createDailyLog({ date: today, profileId: profile._id });
       }
 
-      // Upload photo if provided
-      let photoStorageId: undefined | any = undefined;
-      if (photoFile) {
-        const uploadUrl = await generateUploadUrl();
-        const result = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": photoFile.type },
-          body: photoFile,
-        });
-        const { storageId } = await result.json();
-        photoStorageId = storageId;
-      }
-
       await addFood({
         dailyLogId: logId,
         timeLocal: time,
@@ -94,7 +62,6 @@ export default function LogFood() {
         proteinG: proteinG ? parseInt(proteinG) : undefined,
         carbsG: carbsG ? parseInt(carbsG) : undefined,
         fatsG: fatsG ? parseInt(fatsG) : undefined,
-        photoStorageId,
         category,
       });
       setItem("");
@@ -104,7 +71,6 @@ export default function LogFood() {
       setCarbsG("");
       setFatsG("");
       setTime(nowTimeString());
-      clearPhoto();
     } finally {
       setSubmitting(false);
     }
@@ -214,68 +180,35 @@ export default function LogFood() {
           />
         </div>
 
-        {/* Macros row */}
-        <div className="flex gap-2">
+        {/* Macros (optional) */}
+        <div className="space-y-1.5">
+          <div className="text-[10px] text-muted uppercase tracking-wider">
+            Macros (optional)
+          </div>
           <input
             type="number"
-            placeholder="Protein g"
+            placeholder="Protein (g)"
             value={proteinG}
             onChange={(e) => setProteinG(e.target.value)}
-            className="flex-1 px-3 py-2 rounded-xl border border-card-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-card-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-300 focus:border-blue-400"
             min={0}
           />
           <input
             type="number"
-            placeholder="Carbs g"
+            placeholder="Carbs (g)"
             value={carbsG}
             onChange={(e) => setCarbsG(e.target.value)}
-            className="flex-1 px-3 py-2 rounded-xl border border-card-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-card-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-amber-300 focus:border-amber-400"
             min={0}
           />
           <input
             type="number"
-            placeholder="Fats g"
+            placeholder="Fats (g)"
             value={fatsG}
             onChange={(e) => setFatsG(e.target.value)}
-            className="flex-1 px-3 py-2 rounded-xl border border-card-border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-card-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-red-300 focus:border-red-400"
             min={0}
           />
-        </div>
-
-        {/* Photo upload */}
-        <div className="flex items-center gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoChange}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-card-border text-xs text-muted hover:border-accent/40 transition-colors"
-          >
-            <Camera size={14} />
-            {photoFile ? "Change photo" : "Add photo"}
-          </button>
-          {photoPreview && (
-            <div className="relative">
-              <img
-                src={photoPreview}
-                alt="Preview"
-                className="w-10 h-10 rounded-lg object-cover"
-              />
-              <button
-                type="button"
-                onClick={clearPhoto}
-                className="absolute -top-1 -right-1 w-4 h-4 bg-danger text-white rounded-full flex items-center justify-center"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          )}
         </div>
 
         <button

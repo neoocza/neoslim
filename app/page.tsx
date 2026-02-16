@@ -33,8 +33,9 @@ import {
 } from "recharts";
 
 function todayString() {
+  // Use local date, not UTC
   const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 const categoryIcon = {
@@ -193,39 +194,31 @@ export default function Dashboard() {
             {waterGlasses} / {waterTarget}
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {Array.from({ length: waterTarget }).map((_, i) => (
-            <button
+            <div
               key={i}
-              onClick={() => {
-                if (i < waterGlasses) {
-                  removeWater({ date: today });
-                } else if (i === waterGlasses) {
-                  addWater({ date: today, profileId: profile._id });
-                }
-              }}
-              className="flex-1 flex justify-center"
-            >
-              <GlassWater
-                size={24}
-                className={`transition-colors ${
-                  i < waterGlasses
-                    ? "text-sky-500 fill-sky-100"
-                    : "text-gray-200"
-                }`}
-                strokeWidth={1.5}
-              />
-            </button>
+              className={`flex-1 h-6 rounded-md transition-colors ${
+                i < waterGlasses ? "bg-sky-400" : "bg-gray-100"
+              }`}
+            />
           ))}
-          {waterGlasses > 0 && (
-            <button
-              onClick={() => removeWater({ date: today })}
-              className="ml-1 p-1 text-muted hover:text-danger"
-              title="Remove last glass"
-            >
-              <Minus size={14} />
-            </button>
-          )}
+        </div>
+        <div className="flex items-center justify-between mt-3">
+          <button
+            onClick={() => removeWater({ date: today })}
+            disabled={waterGlasses === 0}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-card-border text-xs font-medium text-muted hover:border-danger/40 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Minus size={14} />
+          </button>
+          <button
+            onClick={() => addWater({ date: today, profileId: profile._id })}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-sky-500 text-white text-xs font-medium hover:bg-sky-600 active:scale-95 transition-transform"
+          >
+            <GlassWater size={14} />
+            Add glass
+          </button>
         </div>
       </div>
 
