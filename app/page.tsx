@@ -107,12 +107,21 @@ export default function Dashboard() {
   const totalProtein = foodEntries?.reduce((s, e) => s + (e.proteinG ?? 0), 0) ?? 0;
   const totalCarbs = foodEntries?.reduce((s, e) => s + (e.carbsG ?? 0), 0) ?? 0;
   const totalFats = foodEntries?.reduce((s, e) => s + (e.fatsG ?? 0), 0) ?? 0;
-  const totalMacroG = totalProtein + totalCarbs + totalFats;
 
   const macroData = [
     { name: "Protein", value: totalProtein, color: MACRO_COLORS.protein },
     { name: "Carbs", value: totalCarbs, color: MACRO_COLORS.carbs },
     { name: "Fats", value: totalFats, color: MACRO_COLORS.fats },
+  ];
+
+  const proteinTargetG = profile.dailyProteinTargetG;
+  const carbsLimitG = 50;
+  const fatsLimitG = 110;
+
+  const macroTargets = [
+    { name: "Protein", used: totalProtein, target: proteinTargetG, color: MACRO_COLORS.protein },
+    { name: "Carbs", used: totalCarbs, target: carbsLimitG, color: MACRO_COLORS.carbs },
+    { name: "Fats", used: totalFats, target: fatsLimitG, color: MACRO_COLORS.fats },
   ];
 
   // Weight chart data (chronological)
@@ -258,8 +267,7 @@ export default function Dashboard() {
       </div>
 
       {/* Macro Breakdown */}
-      {totalMacroG > 0 && (
-        <div className="rounded-2xl bg-card-bg border border-card-border p-5 shadow-sm">
+      <div className="rounded-2xl bg-card-bg border border-card-border p-5 shadow-sm">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-3">
             Macros
           </h2>
@@ -286,42 +294,39 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
             <div className="flex-1 space-y-2">
-              {macroData.map((macro) => (
-                <div key={macro.name} className="flex items-center gap-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: macro.color }}
-                  />
-                  <span className="text-xs text-muted flex-1">{macro.name}</span>
-                  <span className="text-sm font-semibold">{macro.value}g</span>
-                  <span className="text-[10px] text-muted w-8 text-right">
-                    {totalMacroG > 0
-                      ? Math.round((macro.value / totalMacroG) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-              ))}
-              <div className="pt-1 border-t border-card-border flex items-center justify-between">
-                <span className="text-xs text-muted">
-                  Protein target: {profile.dailyProteinTargetG}g
-                </span>
-                <span
-                  className={`text-xs font-semibold ${
-                    totalProtein >= profile.dailyProteinTargetG
-                      ? "text-success"
-                      : "text-muted"
-                  }`}
-                >
-                  {totalProtein >= profile.dailyProteinTargetG
-                    ? "Hit!"
-                    : `${profile.dailyProteinTargetG - totalProtein}g to go`}
-                </span>
-              </div>
+              {macroTargets.map((macro) => {
+                const used = Math.round(macro.used * 10) / 10;
+                const target = Math.round(macro.target * 10) / 10;
+                const remaining = Math.round((target - used) * 10) / 10;
+                const pct = target > 0 ? Math.round((used / target) * 100) : 0;
+                return (
+                  <div key={macro.name} className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: macro.color }}
+                      />
+                      <span className="text-xs text-muted flex-1">{macro.name}</span>
+                      <span className="text-xs font-semibold">{used}g / {target}g</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, pct))}%`,
+                          backgroundColor: macro.color,
+                        }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-muted text-right">
+                      {remaining >= 0 ? `${remaining}g left` : `${Math.abs(remaining)}g over`}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      )}
 
       {/* Stat Cards Grid */}
       <div className="grid grid-cols-2 gap-3">
