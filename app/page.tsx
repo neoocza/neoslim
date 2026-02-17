@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import CalorieRing from "./components/CalorieRing";
@@ -15,6 +16,7 @@ import {
   Droplets,
   GlassWater,
   Minus,
+  X,
 } from "lucide-react";
 import {
   BarChart,
@@ -65,6 +67,8 @@ export default function Dashboard() {
   const recentLogs = useQuery(api.dailyLogs.list, { limit: 7 });
   const addWater = useMutation(api.dailyLogs.addWater);
   const removeWater = useMutation(api.dailyLogs.removeWater);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState<string>("Photo");
 
   if (profile === undefined) {
     return (
@@ -93,7 +97,8 @@ export default function Dashboard() {
   const steps = dailyLog?.stepsCount ?? 0;
   const stepTarget = profile.dailyStepTarget;
   const stepPercent = Math.min(100, (steps / stepTarget) * 100);
-  const deficit = dailyLog?.deficitKcal ?? 0;
+  const burnEstimate = dailyLog?.kcalBurned ?? profile.tdeeKcal;
+  const deficit = Math.round(burnEstimate - kcalConsumed);
   const latestWeight = weightEntries?.[0]?.weightKg ?? profile.startWeightKg;
   const waterGlasses = dailyLog?.waterGlasses ?? 0;
   const waterTarget = profile.dailyWaterGlassTarget ?? 8;
@@ -167,16 +172,18 @@ export default function Dashboard() {
                 {kcalConsumed} kcal
               </div>
             </div>
-            {deficit > 0 && (
-              <div>
-                <div className="text-xs text-muted uppercase tracking-wider font-medium">
-                  Deficit
-                </div>
-                <div className="text-sm font-semibold text-success">
-                  {deficit} kcal
-                </div>
+            <div>
+              <div className="text-xs text-muted uppercase tracking-wider font-medium">
+                Net
               </div>
-            )}
+              <div
+                className={`text-sm font-semibold ${
+                  deficit >= 0 ? "text-success" : "text-danger"
+                }`}
+              >
+                {deficit >= 0 ? `${deficit} kcal deficit` : `${Math.abs(deficit)} kcal over`}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -325,16 +332,16 @@ export default function Dashboard() {
           icon={<Scale size={16} />}
         />
         <StatCard
-          label="Deficit"
-          value={`${deficit} kcal`}
-          sub="estimated today"
+          label="Net"
+          value={deficit >= 0 ? `${deficit} kcal deficit` : `${Math.abs(deficit)} kcal over`}
+          sub="live estimate"
           icon={<TrendingDown size={16} />}
           accent
         />
         <StatCard
           label="Burned"
-          value={`${dailyLog?.kcalBurned ?? "—"}`}
-          sub="TDEE estimate"
+          value={`${burnEstimate}`}
+          sub={dailyLog?.kcalBurned != null ? "today estimate" : "TDEE baseline"}
           icon={<Flame size={16} />}
         />
         <StatCard
@@ -364,11 +371,21 @@ export default function Dashboard() {
                 <div key={entry._id} className="flex items-start gap-3">
                   {/* Photo thumbnail or category icon */}
                   {entry.photoUrl ? (
-                    <img
-                      src={entry.photoUrl}
-                      alt={entry.item}
-                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLightboxUrl(entry.photoUrl!);
+                        setLightboxAlt(entry.item);
+                      }}
+                      className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-accent/40"
+                      aria-label={`Open photo for ${entry.item}`}
+                    >
+                      <img
+                        src={entry.photoUrl}
+                        alt={entry.item}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
                   ) : (
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colorCls}`}
@@ -492,6 +509,28 @@ export default function Dashboard() {
               />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-white/90 hover:text-white"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Close photo"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt={lightboxAlt}
+            className="max-w-full max-h-full rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

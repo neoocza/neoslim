@@ -14,6 +14,7 @@ import {
   UtensilsCrossed,
   Cookie,
   Droplets,
+  X,
 } from "lucide-react";
 
 const categoryIcon = {
@@ -24,6 +25,8 @@ const categoryIcon = {
 
 function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCount?: number; kcalTotal?: number; deficitKcal?: number; kcalBurned?: number; waterGlasses?: number; notes?: string } }) {
   const [open, setOpen] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState<string>("Photo");
   const foodEntries = useQuery(
     api.foodEntries.listByDailyLog,
     open ? { dailyLogId: log._id } : "skip"
@@ -105,11 +108,21 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
                 return (
                   <div key={entry._id} className="flex items-center gap-2">
                     {entry.photoUrl ? (
-                      <img
-                        src={entry.photoUrl}
-                        alt={entry.item}
-                        className="w-6 h-6 rounded object-cover flex-shrink-0"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLightboxUrl(entry.photoUrl!);
+                          setLightboxAlt(entry.item);
+                        }}
+                        className="w-6 h-6 rounded overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-accent/40"
+                        aria-label={`Open photo for ${entry.item}`}
+                      >
+                        <img
+                          src={entry.photoUrl}
+                          alt={entry.item}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
                     ) : (
                       <Icon size={12} className="text-muted flex-shrink-0" />
                     )}
@@ -124,6 +137,28 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-white/90 hover:text-white"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Close photo"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt={lightboxAlt}
+            className="max-w-full max-h-full rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

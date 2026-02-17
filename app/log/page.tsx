@@ -9,6 +9,7 @@ import {
   UtensilsCrossed,
   Cookie,
   Trash2,
+  X,
 } from "lucide-react";
 
 function todayString() {
@@ -39,6 +40,8 @@ export default function LogFood() {
   const [time, setTime] = useState(nowTimeString());
   const [category, setCategory] = useState<"meal" | "drink" | "snack">("meal");
   const [submitting, setSubmitting] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState<string>("Photo");
 
   const kcalTotal = foodEntries?.reduce((s, e) => s + e.kcalEstimate, 0) ?? 0;
   const kcalBudget = profile ? profile.dailyCalorieMax : 2100;
@@ -234,11 +237,21 @@ export default function LogFood() {
                 className="flex items-center gap-3 py-2 border-b border-card-border last:border-0"
               >
                 {entry.photoUrl && (
-                  <img
-                    src={entry.photoUrl}
-                    alt={entry.item}
-                    className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLightboxUrl(entry.photoUrl!);
+                      setLightboxAlt(entry.item);
+                    }}
+                    className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-accent/40"
+                    aria-label={`Open photo for ${entry.item}`}
+                  >
+                    <img
+                      src={entry.photoUrl}
+                      alt={entry.item}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium truncate">
@@ -267,6 +280,28 @@ export default function LogFood() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            type="button"
+            className="absolute top-4 right-4 text-white/90 hover:text-white"
+            onClick={() => setLightboxUrl(null)}
+            aria-label="Close photo"
+          >
+            <X size={22} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt={lightboxAlt}
+            className="max-w-full max-h-full rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
