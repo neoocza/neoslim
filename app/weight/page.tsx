@@ -15,8 +15,12 @@ import {
   CartesianGrid,
 } from "recharts";
 
-function todayString() {
-  return new Date().toISOString().slice(0, 10);
+function localDateString(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function localTimeString(d = new Date()) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 export default function LogWeight() {
@@ -25,7 +29,6 @@ export default function LogWeight() {
   const addWeight = useMutation(api.weightEntries.add);
 
   const [weight, setWeight] = useState("");
-  const [date, setDate] = useState(todayString());
   const [submitting, setSubmitting] = useState(false);
 
   const entries = weightEntries ?? [];
@@ -65,8 +68,9 @@ export default function LogWeight() {
     if (!weight || !profile) return;
     setSubmitting(true);
     try {
+      const now = new Date();
       await addWeight({
-        date,
+        date: localDateString(now),
         weightKg: parseFloat(weight),
         profileId: profile._id,
       });
@@ -131,23 +135,18 @@ export default function LogWeight() {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
           Log Weight
         </h2>
-        <div className="flex gap-3">
-          <input
-            type="number"
-            step="0.1"
-            placeholder="Weight in kg"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            className="flex-1 px-3 py-2.5 rounded-xl border border-card-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-            required
-          />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="px-3 py-2.5 rounded-xl border border-card-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-          />
-        </div>
+        <input
+          type="number"
+          step="0.1"
+          placeholder="Weight in kg"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-xl border border-card-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+          required
+        />
+        <p className="text-xs text-muted">
+          Auto timestamp: {localDateString()} {localTimeString()}
+        </p>
         <button
           type="submit"
           disabled={submitting || !weight}
@@ -220,7 +219,9 @@ export default function LogWeight() {
                 key={e._id}
                 className="flex items-center justify-between py-1.5 border-b border-card-border last:border-0"
               >
-                <span className="text-sm text-muted">{e.date}</span>
+                <span className="text-sm text-muted">
+                  {e.date} {new Date(e._creationTime).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                </span>
                 <span className="text-sm font-semibold">{e.weightKg} kg</span>
               </div>
             ))}
