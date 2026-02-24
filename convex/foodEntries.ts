@@ -95,6 +95,14 @@ export const remove = mutation({
   },
 });
 
+export const recent = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit }) => {
+    const entries = await ctx.db.query("foodEntries").order("desc").collect();
+    return entries.slice(0, limit ?? 20);
+  },
+});
+
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {

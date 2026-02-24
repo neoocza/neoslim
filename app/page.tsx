@@ -16,6 +16,7 @@ import {
   Droplets,
   GlassWater,
   Minus,
+  Moon,
   X,
 } from "lucide-react";
 import {
@@ -102,6 +103,7 @@ export default function Dashboard() {
   const latestWeight = weightEntries?.[0]?.weightKg ?? profile.startWeightKg;
   const waterGlasses = dailyLog?.waterGlasses ?? 0;
   const waterTarget = profile.dailyWaterGlassTarget ?? 8;
+  const sleepHours = dailyLog?.sleepHours;
 
   // Macro totals
   const totalProtein = foodEntries?.reduce((s, e) => s + (e.proteinG ?? 0), 0) ?? 0;
@@ -355,6 +357,12 @@ export default function Dashboard() {
           sub="glasses today"
           icon={<Droplets size={16} />}
           accent
+        />
+        <StatCard
+          label="Sleep"
+          value={sleepHours != null ? `${sleepHours} h` : "--"}
+          sub={sleepHours != null ? "last night" : "not logged yet"}
+          icon={<Moon size={16} />}
         />
       </div>
 

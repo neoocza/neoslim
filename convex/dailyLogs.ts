@@ -33,6 +33,7 @@ export const create = mutation({
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
     waterGlasses: v.optional(v.number()),
+    sleepHours: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -56,6 +57,7 @@ export const update = mutation({
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
     waterGlasses: v.optional(v.number()),
+    sleepHours: v.optional(v.number()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...fields }) => {

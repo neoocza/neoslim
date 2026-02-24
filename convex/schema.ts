@@ -35,6 +35,7 @@ export default defineSchema({
     kcalBurned: v.optional(v.number()),
     deficitKcal: v.optional(v.number()),
     waterGlasses: v.optional(v.number()),
+    sleepHours: v.optional(v.number()),
     notes: v.optional(v.string()),
   }).index("by_date", ["date"]),
 

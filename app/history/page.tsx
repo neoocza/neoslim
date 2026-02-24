@@ -23,7 +23,22 @@ const categoryIcon = {
   snack: Cookie,
 };
 
-function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCount?: number; kcalTotal?: number; deficitKcal?: number; kcalBurned?: number; waterGlasses?: number; notes?: string } }) {
+function DayCard({
+  log,
+  tdeeKcal,
+}: {
+  log: {
+    _id: Id<"dailyLogs">;
+    date: string;
+    stepsCount?: number;
+    kcalTotal?: number;
+    deficitKcal?: number;
+    kcalBurned?: number;
+    waterGlasses?: number;
+    notes?: string;
+  };
+  tdeeKcal?: number;
+}) {
   const [open, setOpen] = useState(false);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState<string>("Photo");
@@ -37,6 +52,10 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
     day: "numeric",
     month: "short",
   });
+  const burnEstimate = log.kcalBurned ?? tdeeKcal;
+  const displayDeficit =
+    log.deficitKcal ??
+    (burnEstimate != null ? Math.round(burnEstimate - (log.kcalTotal ?? 0)) : undefined);
 
   return (
     <div className="rounded-2xl bg-card-bg border border-card-border shadow-sm overflow-hidden">
@@ -52,9 +71,9 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {log.deficitKcal != null && log.deficitKcal > 0 && (
+          {displayDeficit != null && displayDeficit > 0 && (
             <span className="text-xs font-medium text-success bg-green-50 px-2 py-0.5 rounded-full">
-              -{log.deficitKcal} deficit
+              -{displayDeficit} deficit
             </span>
           )}
           {open ? (
@@ -79,9 +98,9 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
                 <Flame size={12} /> {log.kcalBurned} burned
               </span>
             )}
-            {log.deficitKcal != null && (
+            {displayDeficit != null && (
               <span className="flex items-center gap-1">
-                <TrendingDown size={12} /> {log.deficitKcal} deficit
+                <TrendingDown size={12} /> {displayDeficit} deficit
               </span>
             )}
             {log.waterGlasses != null && log.waterGlasses > 0 && (
@@ -167,6 +186,7 @@ function DayCard({ log }: { log: { _id: Id<"dailyLogs">; date: string; stepsCoun
 
 export default function History() {
   const dailyLogs = useQuery(api.dailyLogs.list, {});
+  const profile = useQuery(api.profiles.get);
 
   return (
     <div className="px-4 pt-6 space-y-4">
@@ -183,7 +203,7 @@ export default function History() {
       ) : (
         <div className="space-y-3">
           {dailyLogs.map((log) => (
-            <DayCard key={log._id} log={log} />
+            <DayCard key={log._id} log={log} tdeeKcal={profile?.tdeeKcal} />
           ))}
         </div>
       )}

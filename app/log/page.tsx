@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import {
@@ -9,6 +9,7 @@ import {
   UtensilsCrossed,
   Cookie,
   Trash2,
+  Copy,
   X,
 } from "lucide-react";
 
@@ -22,11 +23,14 @@ function nowTimeString() {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+type EntryCategory = "meal" | "drink" | "snack";
+
 export default function LogFood() {
   const today = todayString();
   const profile = useQuery(api.profiles.get);
   const dailyLog = useQuery(api.dailyLogs.getByDate, { date: today });
   const foodEntries = useQuery(api.foodEntries.listByDate, { date: today });
+  const recentEntries = useQuery(api.foodEntries.recent, { limit: 30 });
 
   const createDailyLog = useMutation(api.dailyLogs.create);
   const addFood = useMutation(api.foodEntries.add);
@@ -38,33 +42,59 @@ export default function LogFood() {
   const [carbsG, setCarbsG] = useState("");
   const [fatsG, setFatsG] = useState("");
   const [time, setTime] = useState(nowTimeString());
-  const [category, setCategory] = useState<"meal" | "drink" | "snack">("meal");
+  const [category, setCategory] = useState<EntryCategory>("meal");
   const [submitting, setSubmitting] = useState(false);
+  const [quickAddingId, setQuickAddingId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState<string>("Photo");
 
   const kcalTotal = foodEntries?.reduce((s, e) => s + e.kcalEstimate, 0) ?? 0;
   const kcalBudget = profile ? profile.dailyCalorieMax : 2100;
 
+  const recentTemplates = useMemo(() => {
+    if (!recentEntries) return [];
+    const seen = new Set<string>();
+    const todayKeys = new Set(
+      (foodEntries ?? []).map((e) => `${e.item}|${e.kcalEstimate}|${e.category}`)
+    );
+
+    return recentEntries
+      .filter((e) => {
+        const key = `${e.item}|${e.kcalEstimate}|${e.category}`;
+        if (todayKeys.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 8);
+  }, [recentEntries, foodEntries]);
+
+  async function ensureLogId() {
+    if (!profile) throw new Error("Profile not loaded yet.");
+    let logId = dailyLog?._id;
+    if (!logId) {
+      logId = await createDailyLog({ date: today, profileId: profile._id });
+    }
+    return logId;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!item || !kcal || !profile) return;
+    setFormError(null);
+    if (!item.trim() || !kcal || !profile) return;
     setSubmitting(true);
     try {
-      let logId = dailyLog?._id;
-      if (!logId) {
-        logId = await createDailyLog({ date: today, profileId: profile._id });
-      }
+      const logId = await ensureLogId();
 
       await addFood({
         dailyLogId: logId,
         timeLocal: time,
-        item,
-        details: details || undefined,
-        kcalEstimate: parseInt(kcal),
-        proteinG: proteinG ? parseInt(proteinG) : undefined,
-        carbsG: carbsG ? parseInt(carbsG) : undefined,
-        fatsG: fatsG ? parseInt(fatsG) : undefined,
+        item: item.trim(),
+        details: details.trim() || undefined,
+        kcalEstimate: Number(kcal),
+        proteinG: proteinG ? Number(proteinG) : undefined,
+        carbsG: carbsG ? Number(carbsG) : undefined,
+        fatsG: fatsG ? Number(fatsG) : undefined,
         category,
       });
       setItem("");
@@ -74,8 +104,42 @@ export default function LogFood() {
       setCarbsG("");
       setFatsG("");
       setTime(nowTimeString());
+    } catch {
+      setFormError("Couldn’t add entry. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function addFromRecent(template: {
+    _id: string;
+    item: string;
+    details?: string;
+    kcalEstimate: number;
+    proteinG?: number;
+    carbsG?: number;
+    fatsG?: number;
+    category: EntryCategory;
+  }) {
+    setFormError(null);
+    setQuickAddingId(template._id);
+    try {
+      const logId = await ensureLogId();
+      await addFood({
+        dailyLogId: logId,
+        timeLocal: nowTimeString(),
+        item: template.item,
+        details: template.details,
+        kcalEstimate: template.kcalEstimate,
+        proteinG: template.proteinG,
+        carbsG: template.carbsG,
+        fatsG: template.fatsG,
+        category: template.category,
+      });
+    } catch {
+      setFormError("Couldn’t add from previous entry. Please try again.");
+    } finally {
+      setQuickAddingId(null);
     }
   }
 
@@ -119,6 +183,12 @@ export default function LogFood() {
           {kcalBudget} kcal max
         </div>
       </div>
+
+      {formError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {formError}
+        </div>
+      )}
 
       {/* Add form */}
       <form
@@ -216,13 +286,54 @@ export default function LogFood() {
 
         <button
           type="submit"
-          disabled={submitting || !item || !kcal}
+          disabled={submitting || !item.trim() || !kcal || !profile}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent text-white font-medium text-sm hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Plus size={16} />
           {submitting ? "Adding..." : "Add Entry"}
         </button>
       </form>
+
+      {/* Quick add from previous */}
+      {recentTemplates.length > 0 && (
+        <div className="rounded-2xl bg-card-bg border border-card-border p-5 shadow-sm">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted mb-3">
+            Add from previous logs
+          </h2>
+          <div className="space-y-2">
+            {recentTemplates.map((entry) => (
+              <div key={entry._id} className="flex items-center gap-2 py-2 border-b border-card-border last:border-0">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{entry.item}</div>
+                  <div className="text-xs text-muted truncate">
+                    {entry.kcalEstimate} kcal{entry.details ? ` · ${entry.details}` : ""}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    addFromRecent({
+                      _id: entry._id,
+                      item: entry.item,
+                      details: entry.details,
+                      kcalEstimate: entry.kcalEstimate,
+                      proteinG: entry.proteinG,
+                      carbsG: entry.carbsG,
+                      fatsG: entry.fatsG,
+                      category: entry.category as EntryCategory,
+                    })
+                  }
+                  disabled={quickAddingId === entry._id}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-card-border text-xs hover:border-accent/40 disabled:opacity-40"
+                >
+                  <Copy size={12} />
+                  {quickAddingId === entry._id ? "Adding..." : "Add"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Today's entries */}
       {foodEntries && foodEntries.length > 0 && (
@@ -271,6 +382,7 @@ export default function LogFood() {
                     {entry.kcalEstimate}
                   </span>
                   <button
+                    type="button"
                     onClick={() => removeFood({ id: entry._id })}
                     className="text-muted hover:text-danger p-1"
                   >
